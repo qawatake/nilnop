@@ -1,7 +1,16 @@
 package a
 
 func f() {
-	// The pattern can be written in regular expression.
-	var gopher int // want "pattern"
-	print(gopher)  // want "identifier is gopher"
+	var x error
+	Wrap(x) // want "xx"
+	var s S
+	s.String()
+}
+
+func Wrap(x any) {}
+
+type S int
+
+func (s S) String() string {
+	return "a"
 }
