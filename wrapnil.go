@@ -375,12 +375,12 @@ func (v *validator) validate(stack []fact, instr ssa.CallInstruction) {
 			if fn.Signature.Recv() == nil {
 				arg := instr.Common().Args[t.argPos]
 				if nilnessOf(stack, arg) == isnil {
-					v.pass.Reportf(instr.Pos(), "xx")
+					v.pass.Reportf(instr.Pos(), "nil is passed to %s", fn.Name())
 				}
 			} else {
 				arg := instr.Common().Args[t.argPos+1]
 				if nilnessOf(stack, arg) == isnil {
-					v.pass.Reportf(instr.Pos(), "xx")
+					v.pass.Reportf(instr.Pos(), "nil is passed to %s", fn.Name())
 				}
 			}
 			return

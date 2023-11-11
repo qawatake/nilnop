@@ -7,24 +7,24 @@ func f1() {
 	if err != nil {
 		panic(err)
 	}
-	Wrap(err) // want "xx"
+	Wrap(err) // want "nil"
 }
 
 func f2() (err error) {
-	Wrap(err) // want "xx"
+	Wrap(err) // want "nil"
 	err = errors.New("hoge")
 	Wrap(err) // ok
 	return err
 }
 
 func f3() {
-	Wrap(nil) // want "xx"
+	Wrap(nil) // want "nil"
 }
 
 func f4(x any) {
 	switch x.(type) {
 	case nil:
-		Wrap(x) // want "xx"
+		Wrap(x) // want "nil"
 	case int:
 		Wrap(x) // ok
 	}
