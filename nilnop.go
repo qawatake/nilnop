@@ -20,6 +20,7 @@ import (
 
 const name = "nilnop"
 const doc = "nilnop detects nil is passed to a function that does nothing for nil"
+const url = "https://pkg.go.dev/github.com/qawatake/nilnop"
 
 func NewAnalyzer(tgt ...Target) *analysis.Analyzer {
 	a := &analyzer{
@@ -28,6 +29,7 @@ func NewAnalyzer(tgt ...Target) *analysis.Analyzer {
 	return &analysis.Analyzer{
 		Name:     name,
 		Doc:      doc,
+		URL:      url,
 		Run:      a.run,
 		Requires: []*analysis.Analyzer{buildssa.Analyzer},
 	}
@@ -337,12 +339,13 @@ type target struct {
 	argPos int
 }
 
+// Target represents a function or a method to be checked by nilnop.
 type Target struct {
 	// Package path of the function or method.
 	PkgPath string
 	// Name of the function or method.
 	FuncName string
-	// Position of an argument which should be a named return value.
+	// Position of an argument which should not be nil.
 	// ArgPos is 0-indexed.
 	ArgPos int
 }
