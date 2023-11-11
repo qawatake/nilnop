@@ -4,7 +4,7 @@
 
 // Modifications Copyright (c) qawatake 2023
 
-package wrapnil
+package nilnop
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
-const name = "wrapnil"
+const name = "nilnop"
 const doc = "wpranil is ..."
 
 func NewAnalyzer(tgt ...Target) *analysis.Analyzer {

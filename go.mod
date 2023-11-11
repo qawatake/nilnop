@@ -1,4 +1,4 @@
-module github.com/qawatake/wrapnil
+module github.com/qawatake/nilnop
 
 go 1.21
 
