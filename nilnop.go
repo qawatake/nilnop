@@ -19,7 +19,7 @@ import (
 )
 
 const name = "nilnop"
-const doc = "wpranil is ..."
+const doc = "nilnop detects nil is passed to a function that does nothing for nil"
 
 func NewAnalyzer(tgt ...Target) *analysis.Analyzer {
 	a := &analyzer{
