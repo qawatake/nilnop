@@ -18,7 +18,11 @@ cov:
 	go tool cover -html=cover.out -o cover.html
 
 build:
-	go build -o $(BINDIR)/nilnop ./internal/example/cmd/nilnop
+	@go build -o $(BINDIR)/nilnop ./internal/example/cmd/nilnop
 
 test.vet:
-	go vet -vettool=$(BINDIR)/nilnop ./internal/...
+	-@go vet -vettool=$(BINDIR)/nilnop ./internal/...
+
+run.example:
+	@$(MAKE) build
+	@$(MAKE) test.vet

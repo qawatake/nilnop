@@ -12,7 +12,7 @@ import (
 	"go/types"
 	"strings"
 
-	"github.com/gostaticanalysis/analysisutil"
+	"github.com/qawatake/nilnop/internal/analysisutil"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/buildssa"
 	"golang.org/x/tools/go/ssa"
