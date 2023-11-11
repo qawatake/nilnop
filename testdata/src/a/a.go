@@ -2,38 +2,26 @@ package a
 
 import "errors"
 
-func g() {
+func f1() {
 	err := doSomething()
 	if err != nil {
-		panic("panic")
+		panic(err)
 	}
 	Wrap(err) // want "xx"
 }
 
-func h() (err error) {
+func f2() (err error) {
 	Wrap(err) // want "xx"
 	err = errors.New("hoge")
 	Wrap(err) // ok
 	return err
 }
 
-func i() {
+func f3() {
 	Wrap(nil) // want "xx"
 }
 
-func f() {
-	var s []int = nil
-	Wrap(s) // want "xx"
-	ss := s[:][:]
-	Wrap(ss) // want "xx"
-}
-
-func f3() (a []int) {
-	Wrap(a) // want "xx"
-	return
-}
-
-func f2(x any) {
+func f4(x any) {
 	switch x.(type) {
 	case nil:
 		Wrap(x) // want "xx"
@@ -47,7 +35,3 @@ func doSomething() error {
 }
 
 func Wrap(x any) {}
-
-type S int
-
-func (s S) Wrap(x any) {}

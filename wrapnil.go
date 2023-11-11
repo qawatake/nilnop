@@ -374,7 +374,7 @@ func (v *validator) validate(stack []fact, instr ssa.CallInstruction) {
 			fn := instr.Common().Value.(*ssa.Function)
 			if fn.Signature.Recv() == nil {
 				arg := instr.Common().Args[t.argPos]
-				// fmt.Println(v.pass.Fset.Position(instr.Pos()), fn, arg)
+				fmt.Println(v.pass.Fset.Position(instr.Pos()), fn, arg, nilnessOf(stack, arg))
 				// fmt.Println(fn, arg, arg.(*ssa.MakeSlice).)
 				if nilnessOf(stack, arg) == isnil {
 					fmt.Println("😗", fn)
