@@ -338,9 +338,13 @@ type target struct {
 }
 
 type Target struct {
-	PkgPath  string
+	// Package path of the function or method.
+	PkgPath string
+	// Name of the function or method.
 	FuncName string
-	ArgPos   int
+	// Position of an argument which should be a named return value.
+	// ArgPos is 0-indexed.
+	ArgPos int
 }
 
 func newValidator(pass *analysis.Pass, ts []Target) (*validator, error) {
