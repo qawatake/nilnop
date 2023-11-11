@@ -22,6 +22,8 @@ func reportError(err error) {
 }
 ```
 
+You can try an example by running `make run.example`.
+
 ## How to use
 
 Build your `nilnop` binary by writing `main.go` like below.

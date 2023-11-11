@@ -23,6 +23,8 @@ build:
 test.vet:
 	-@go vet -vettool=$(BINDIR)/nilnop ./internal/...
 
+
+# Run the example
 run.example:
 	@$(MAKE) build
 	@$(MAKE) test.vet
