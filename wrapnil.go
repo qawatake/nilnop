@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Modifications Copyright (c) qawatake 2023
+
 package wrapnil
 
 import (
@@ -449,21 +451,3 @@ func newErrNotFunc(pkgPath, funcName string) errNotFunc {
 func (e errNotFunc) Error() string {
 	return fmt.Sprintf("%s.%s is not a function.", e.PkgPath, e.FuncName)
 }
-
-// type errNotMethod struct {
-// 	PkgPath    string
-// 	Recv       string
-// 	MethodName string
-// }
-
-// func newErrNotMethod(pkgPath, recv, methodName string) errNotMethod {
-// 	return errNotMethod{
-// 		PkgPath:    pkgPath,
-// 		Recv:       recv,
-// 		MethodName: methodName,
-// 	}
-// }
-
-// func (e errNotMethod) Error() string {
-// 	return fmt.Sprintf("%s.%s.%s is not a method.", e.PkgPath, e.Recv, e.MethodName)
-// }
