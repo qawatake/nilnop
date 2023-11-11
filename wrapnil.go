@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"go/token"
 	"go/types"
+	"strings"
 
 	"github.com/gostaticanalysis/analysisutil"
 	"golang.org/x/tools/go/analysis"
@@ -15,23 +16,40 @@ import (
 	"golang.org/x/tools/go/ssa"
 )
 
-var Analyzer = &analysis.Analyzer{
-	Name:     "nilness",
-	Doc:      "hoge",
-	URL:      "https://pkg.go.dev/golang.org/x/tools/go/analysis/passes/nilness",
-	Run:      run,
-	Requires: []*analysis.Analyzer{buildssa.Analyzer},
+const name = "wrapnil"
+const doc = "wpranil is ..."
+
+func NewAnalyzer(tgt ...Target) *analysis.Analyzer {
+	a := &analyzer{
+		targets: tgt,
+	}
+	return &analysis.Analyzer{
+		Name:     name,
+		Doc:      doc,
+		Run:      a.run,
+		Requires: []*analysis.Analyzer{buildssa.Analyzer},
+	}
 }
 
-func run(pass *analysis.Pass) (interface{}, error) {
+type analyzer struct {
+	targets []Target
+}
+
+func (a *analyzer) run(pass *analysis.Pass) (interface{}, error) {
 	ssainput := pass.ResultOf[buildssa.Analyzer].(*buildssa.SSA)
+
+	v, err := newValidator(pass, a.targets)
+	if err != nil {
+		panic(err)
+	}
+
 	for _, fn := range ssainput.SrcFuncs {
-		runFunc(pass, fn)
+		v.runFunc(pass, fn)
 	}
 	return nil, nil
 }
 
-func runFunc(pass *analysis.Pass, fn *ssa.Function) {
+func (a *validator) runFunc(pass *analysis.Pass, fn *ssa.Function) {
 	reportf := func(category string, pos token.Pos, format string, args ...interface{}) {
 		// We ignore nil-checking ssa.Instructions
 		// that don't correspond to syntax.
@@ -42,17 +60,6 @@ func runFunc(pass *analysis.Pass, fn *ssa.Function) {
 				Message:  fmt.Sprintf(format, args...),
 			})
 		}
-	}
-
-	a, err := newAnalyzer(pass, []Target{
-		{
-			PkgPath:  "a",
-			FuncName: "Wrap",
-			ArgPos:   0,
-		},
-	})
-	if err != nil {
-		panic(err)
 	}
 
 	// visit visits reachable blocks of the CFG in dominance order,
@@ -318,7 +325,7 @@ func (ff facts) negate() facts {
 	return nn
 }
 
-type analyzer struct {
+type validator struct {
 	pass    *analysis.Pass
 	targets []*target
 }
@@ -334,16 +341,15 @@ type Target struct {
 	ArgPos   int
 }
 
-func newAnalyzer(pass *analysis.Pass, ts []Target) (*analyzer, error) {
+func newValidator(pass *analysis.Pass, ts []Target) (*validator, error) {
 	targets := make([]*target, 0, len(ts))
 	for _, t := range ts {
-		obj := analysisutil.ObjectOf(pass, t.PkgPath, t.FuncName)
-		if obj == nil {
-			continue
+		fn, err := funcObjectOf(pass, t)
+		if err != nil {
+			return nil, err
 		}
-		fn, ok := obj.(*types.Func)
-		if !ok {
-			return nil, fmt.Errorf("%s is not a function", t.FuncName)
+		if fn == nil {
+			continue
 		}
 		tgt := &target{
 			fn:     fn,
@@ -351,31 +357,113 @@ func newAnalyzer(pass *analysis.Pass, ts []Target) (*analyzer, error) {
 		}
 		targets = append(targets, tgt)
 	}
-	return &analyzer{
+	return &validator{
 		pass:    pass,
 		targets: targets,
 	}, nil
 }
 
-func (a *analyzer) validate(stack []fact, instr ssa.CallInstruction) {
+func (v *validator) validate(stack []fact, instr ssa.CallInstruction) {
 	defer func() {
 		recover()
 	}()
-	for _, t := range a.targets {
+	for _, t := range v.targets {
 		if t.fn == instr.Common().Value.(*ssa.Function).Object() {
 			fn := instr.Common().Value.(*ssa.Function)
 			if fn.Signature.Recv() == nil {
 				arg := instr.Common().Args[t.argPos]
 				if nilnessOf(stack, arg) == isnil {
-					a.pass.Reportf(instr.Pos(), "xx")
+					v.pass.Reportf(instr.Pos(), "xx")
 				}
 			} else {
 				arg := instr.Common().Args[t.argPos+1]
 				if nilnessOf(stack, arg) == isnil {
-					a.pass.Reportf(instr.Pos(), "xx")
+					v.pass.Reportf(instr.Pos(), "xx")
 				}
 			}
 			return
 		}
 	}
 }
+
+func funcObjectOf(pass *analysis.Pass, tgt Target) (*types.Func, error) {
+	// function
+	if !strings.Contains(tgt.FuncName, ".") {
+		obj := analysisutil.ObjectOf(pass, tgt.PkgPath, tgt.FuncName)
+		if obj == nil {
+			// not found is ok because func need not to be called.
+			return nil, nil
+		}
+		ft, ok := obj.(*types.Func)
+		if !ok {
+			return nil, newErrNotFunc(tgt.PkgPath, tgt.FuncName)
+		}
+		return ft, nil
+	}
+	tt := strings.Split(tgt.FuncName, ".")
+	if len(tt) != 2 {
+		return nil, newErrInvalidFuncName(tgt.FuncName)
+	}
+	// method
+	recv := tt[0]
+	method := tt[1]
+	recvType := analysisutil.TypeOf(pass, tgt.PkgPath, recv)
+	if recvType == nil {
+		// not found is ok because method need not to be called.
+		return nil, nil
+	}
+	m := analysisutil.MethodOf(recvType, method)
+	if m == nil {
+		// not found is ok because method need not to be called.
+		return nil, nil
+	}
+	return m, nil
+}
+
+type errInvalidFuncName struct {
+	FuncName string
+}
+
+func newErrInvalidFuncName(funcName string) errInvalidFuncName {
+	return errInvalidFuncName{
+		FuncName: funcName,
+	}
+}
+
+func (e errInvalidFuncName) Error() string {
+	return fmt.Sprintf("invalid FuncName %s", e.FuncName)
+}
+
+type errNotFunc struct {
+	PkgPath  string
+	FuncName string
+}
+
+func newErrNotFunc(pkgPath, funcName string) errNotFunc {
+	return errNotFunc{
+		PkgPath:  pkgPath,
+		FuncName: funcName,
+	}
+}
+
+func (e errNotFunc) Error() string {
+	return fmt.Sprintf("%s.%s is not a function.", e.PkgPath, e.FuncName)
+}
+
+// type errNotMethod struct {
+// 	PkgPath    string
+// 	Recv       string
+// 	MethodName string
+// }
+
+// func newErrNotMethod(pkgPath, recv, methodName string) errNotMethod {
+// 	return errNotMethod{
+// 		PkgPath:    pkgPath,
+// 		Recv:       recv,
+// 		MethodName: methodName,
+// 	}
+// }
+
+// func (e errNotMethod) Error() string {
+// 	return fmt.Sprintf("%s.%s.%s is not a method.", e.PkgPath, e.Recv, e.MethodName)
+// }
